@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Task>
+	<!-- List of components -->
+	<Components>                
+		<Generator type="CameraNUI" thread="Exec1" group="s1">
+			<lib>freenect</lib>
+			<skip_stop>1</skip_stop>
+			<camera_mode>rgb</camera_mode>
+		</Generator>
+	
+		<Converter type="DepthConverter" thread="Exec1" group="s1">
+			<depth_mode>point_cloud</depth_mode>
+		</Converter>
+		
+		<Normal type="DepthNormalEstimator" thread="Exec1" group="s1">
+		</Normal>
+	
+		<Segments type="Segmentation" thread="Exec1" group="s1">
+			<ang_diff>4.0</ang_diff>
+			<dist_diff>0.02</dist_diff>
+			<color_diff>15</color_diff>
+			<threshold>1</threshold>
+			<std_diff>2.5</std_diff>
+		</Segments>
+
+		<Quadrics type="Quadrics" thread="Exec1" group="s1">
+			<label_size>500</label_size>
+			<inliers_size>100</inliers_size>
+			<t_distance>0.0001</t_distance>
+		</Quadrics>
+	
+		<Wnd1 type="CvWindow" thread="Exec3" group="s1">
+			<title>Depth</title>
+			<count>3</count>
+		</Wnd1>
+	</Components>
+	
+	<!-- Threads of execution -->
+	<Executors>
+		<Exec1 type="continuous">
+			<main_component>Generator</main_component>
+		</Exec1>
+	
+		<Exec3 type="periodic">
+			<main_component>Wnd1</main_component>
+			<interval>0.1</interval>
+		</Exec3>
+	</Executors>
+	
+	<!-- Event connections -->
+	<Events>
+		<Event source="Generator.newDepthMap" destination="Converter.onNewDepth"/>
+		<Event source="Generator.newDepthMap" destination="Normal.onNewImage"/>
+		<Event source="Generator.newImage" destination="Segments.onNewColor"/>
+
+		<Event source="Converter.newImage" destination="Segments.onNewDepth"/>
+		<Event source="Converter.newImage" destination="Quadrics.onNewPointCloud"/>
+		
+		<Event source="Normal.newNormals" destination="Segments.onNewNormals"/>
+		
+		<Event source="Segments.newImage" destination="Quadrics.onNewImage"/>
+		<Event source="Segments.newImage" destination="Wnd1.onNewImage1"/>
+		<Event source="Quadrics.newImage" destination="Wnd1.onNewImage0"/>
+		<Event source="Generator.newImage" destination="Wnd1.onNewImage2"/>
+
+	</Events>
+	
+	<!-- Data stream assignments -->
+	<DataStreams>
+		<Generator>
+			<out_depth_map type="out" group="RawDepth"/>
+			<out_img type="out" group="RGB"/>
+		</Generator>
+				
+		<Converter>
+			<in_depth type="in" group="RawDepth" />
+			<out_img type="out" group="PointCloud" />
+		</Converter>
+		
+		<Normal>
+			<in_img type="in" group="RawDepth"/>
+			<out_normals type="out" group="Normal"/>
+			<out_img type="out" group="NormalMap"/>
+		</Normal>
+		
+		<Segments>
+			<in_normals type="in" group="Normal" />
+			<in_depth type="in" group="PointCloud" />
+			<in_color type="in" group="RGB" />
+			<out_img type="out" group="Segments" />
+		</Segments>
+
+		<Quadrics>
+			<in_pc type="in" group="PointCloud" />
+			<in_img type="in" group="Segments" />
+			<out_img type="out" group="Quadrics" />
+		</Quadrics>
+		
+		<Wnd1>
+			<in_img0  type="in" group="Quadrics"/>
+			<in_img1  type="in" group="Segments"/>
+			<in_img2  type="in" group="RGB"/>
+		</Wnd1>
+	</DataStreams>
+</Task>
